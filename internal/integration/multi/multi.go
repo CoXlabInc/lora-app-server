@@ -146,6 +146,19 @@ func (i *Integration) SendLocationNotification(pl integration.LocationNotificati
 	return nil
 }
 
+// SendProprietaryDataUp sends a proprietary uplink data.
+func (i *Integration) SendProprietaryDataUp(pl integration.ProprietaryDataUpPayload) error {
+	for _, ii := range i.integrations {
+		go func(i integration.Integrator) {
+			if err := i.SendProprietaryDataUp(pl); err != nil {
+				log.WithError(err).Errorf("integration/multi: integration %T error", i)
+			}
+		}(ii)
+	}
+
+	return nil
+}
+
 // DataDownChan returns the channel containing the received DataDownPayload.
 func (i *Integration) DataDownChan() chan integration.DataDownPayload {
 	for _, ii := range i.integrations {

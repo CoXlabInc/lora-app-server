@@ -91,6 +91,11 @@ func (i *Integration) SendLocationNotification(pl integration.LocationNotificati
 	return multi.SendLocationNotification(pl)
 }
 
+// TODO: SendProprietaryDataUp is not implemented.
+func (i *Integration) SendProprietaryDataUp(payload integration.ProprietaryDataUpPayload) error {
+	return nil
+}
+
 // DataDownChan return nil.
 func (i *Integration) DataDownChan() chan integration.DataDownPayload {
 	return nil

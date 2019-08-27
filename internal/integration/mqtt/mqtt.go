@@ -43,6 +43,7 @@ type Config struct {
 	ErrorTopicTemplate      string `mapstructure:"error_topic_template"`
 	StatusTopicTemplate     string `mapstructure:"status_topic_template"`
 	LocationTopicTemplate   string `mapstructure:"location_topic_template"`
+	ProprietaryUplinkTopic  string `mapstructure:"proprietary_uplink_topic"`
 	UplinkRetainedMessage   bool   `mapstructure:"uplink_retained_message"`
 	JoinRetainedMessage     bool   `mapstructure:"join_retained_message"`
 	AckRetainedMessage      bool   `mapstructure:"ack_retained_message"`
@@ -65,6 +66,7 @@ type Integration struct {
 	errorTemplate    *template.Template
 	statusTemplate   *template.Template
 	locationTemplate *template.Template
+	proprietaryUplink string
 	downlinkTopic    string
 	downlinkRegexp   *regexp.Regexp
 	uplinkRetained   bool
@@ -111,6 +113,10 @@ func New(p *redis.Pool, conf Config) (*Integration, error) {
 	i.locationTemplate, err = template.New("location").Parse(i.config.LocationTopicTemplate)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse location template error")
+	}
+	i.proprietaryUplink = i.config.ProprietaryUplinkTopic
+	if err != nil {
+		return nil, errors.Wrap(err, "parse proprietary uplink template error")
 	}
 	i.uplinkRetained = i.config.UplinkRetainedMessage
 	i.joinRetained = i.config.JoinRetainedMessage
@@ -258,6 +264,23 @@ func (i *Integration) SendStatusNotification(payload integration.StatusNotificat
 // SendLocationNotification sends a LocationNotification.
 func (i *Integration) SendLocationNotification(payload integration.LocationNotification) error {
 	return i.publish(payload.ApplicationID, payload.DevEUI, i.locationTemplate, i.locationRetained, payload)
+}
+
+func (i *Integration) SendProprietaryDataUp(payload integration.ProprietaryDataUpPayload) error {
+	jsonB, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"topic": i.proprietaryUplink,
+		"qos":   i.config.QOS,
+	}).Info("integration/mqtt: publishing message")
+	if token := i.conn.Publish(i.proprietaryUplink, i.config.QOS, false, jsonB); token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
+
+	return nil
 }
 
 func (i *Integration) publish(applicationID int64, devEUI lorawan.EUI64, topicTemplate *template.Template, retained bool, v interface{}) error {

@@ -16,6 +16,7 @@ type Integrator interface {
 	SendLocationNotification(payload LocationNotification) error // send location notofication
 	DataDownChan() chan DataDownPayload                          // returns DataDownPayload channel
 	Close() error                                                // closes the handler
+	SendProprietaryDataUp(payload ProprietaryDataUpPayload) error // send proprietary-up payload
 }
 
 var integration Integrator

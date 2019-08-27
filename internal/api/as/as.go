@@ -373,7 +373,80 @@ func (a *ApplicationServerAPI) HandleProprietaryUplink(ctx context.Context, req 
 	if err != nil {
 		errStr := fmt.Sprintf("handle received ping error: %s", err)
 		log.Error(errStr)
-		return nil, grpc.Errorf(codes.Internal, errStr)
+	} else {
+		return &empty.Empty{}, nil
+	}
+
+	pl := integration.ProprietaryDataUpPayload{
+		RXInfo:    []integration.RXInfo{},
+		Frequency: req.TxInfo.Frequency,
+		Data:      append(req.MacPayload, req.Mic...),
+	}
+
+	// if req.TxInfo.modulation == common.Modulation_LORA {
+	// 	pl.Bandwidth = req.TxInfo.modulation_info.
+	// 	pl.SpreadingFactor
+	// 	pl.CodingRate
+	// 	pl.PolarizationInversion
+	// } else if req.TxInfo.modulation == common.Modulation_FSK {
+	// 	pl.Bandwidth
+	// 	pl.Bitrate
+	// } else {
+	// 	return nil, grpc.Errorf(codes.Internal, "unknown modulation: %d", (int) req.TxInfo.modulation)
+	// }
+	//
+	// pl.Modulation = (int) req.TxInfo.modulation
+
+	// collect gateway data of receiving gateways (e.g. gateway name)
+	var macs []lorawan.EUI64
+	for _, rxInfo := range req.RxInfo {
+		var mac lorawan.EUI64
+		copy(mac[:], rxInfo.GatewayId)
+		macs = append(macs, mac)
+	}
+	gws, err := storage.GetGatewaysForMACs(storage.DB(), macs)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "get gateways for macs error: %s", err)
+	}
+
+	for _, rxInfo := range req.RxInfo {
+		var mac lorawan.EUI64
+		copy(mac[:], rxInfo.GatewayId)
+
+		row := integration.RXInfo{
+			GatewayID: mac,
+			RSSI:      int(rxInfo.Rssi),
+			LoRaSNR:   rxInfo.LoraSnr,
+		}
+
+		if rxInfo.Location != nil {
+			row.Location = &integration.Location{
+				Latitude:  rxInfo.Location.Latitude,
+				Longitude: rxInfo.Location.Longitude,
+				Altitude:  rxInfo.Location.Altitude,
+			}
+		}
+
+		if gw, ok := gws[mac]; ok {
+			row.Name = gw.Name
+		}
+
+		if rxInfo.Time != nil {
+			ts, err := ptypes.Timestamp(rxInfo.Time)
+			if err != nil {
+				log.WithField("gateway_id", rxInfo.GatewayId).WithError(err).Error("parse timestamp error")
+			} else {
+				row.Time = &ts
+			}
+		}
+
+		pl.RXInfo = append(pl.RXInfo, row)
+	}
+
+	err = integration.Integration().SendProprietaryDataUp(pl)
+	if err != nil {
+		log.WithError(err).Error("send uplink data to integration error")
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
 	return &empty.Empty{}, nil

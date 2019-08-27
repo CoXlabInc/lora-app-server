@@ -15,6 +15,7 @@ func init() {
 	gob.Register(ErrorNotification{})
 	gob.Register(StatusNotification{})
 	gob.Register(LocationNotification{})
+	gob.Register(ProprietaryDataUpPayload{})
 }
 
 // Location details.
@@ -120,4 +121,16 @@ type LocationNotification struct {
 	DeviceName      string        `json:"deviceName"`
 	DevEUI          lorawan.EUI64 `json:"devEUI"`
 	Location        Location      `json:"location"`
+}
+
+type ProprietaryDataUpPayload struct {
+	RXInfo                []RXInfo      `json:"rxInfo,omitempty"`
+	Frequency             uint32        `json:"frequency"`
+	// Modulation            int           `json:"modulation"`
+	// Bandwidth             uint32        `json:"bandwidth"`
+	// SpreadingFactor       uint32        `json:"sf,omitempty"`
+	// CodingRate            string        `json:"cr,omitempty"`
+	// PolarizationInversion bool          `json:"ipol,omitempty"`
+	// Bitrate               uint32        `json:"bitrate,omitempty"`
+	Data                  []byte        `json:"data"`
 }

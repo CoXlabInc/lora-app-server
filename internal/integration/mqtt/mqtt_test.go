@@ -81,6 +81,7 @@ func (ts *MQTTHandlerTestSuite) SetupSuite() {
 			ErrorTopicTemplate:    "application/{{ .ApplicationID }}/device/{{ .DevEUI }}/error",
 			StatusTopicTemplate:   "application/{{ .ApplicationID }}/device/{{ .DevEUI }}/status",
 			LocationTopicTemplate: "application/{{ .ApplicationID }}/device/{{ .DevEUI }}/location",
+			ProprietaryUplinkTopic:"proprietary",
 		},
 	)
 	assert.NoError(err)

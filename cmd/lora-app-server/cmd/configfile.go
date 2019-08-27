@@ -139,6 +139,7 @@ id="{{ .ApplicationServer.ID }}"
   error_topic_template="{{ .ApplicationServer.Integration.MQTT.ErrorTopicTemplate }}"
   status_topic_template="{{ .ApplicationServer.Integration.MQTT.StatusTopicTemplate }}"
   location_topic_template="{{ .ApplicationServer.Integration.MQTT.LocationTopicTemplate }}"
+  proprietary_uplink_topic="{{ .ApplicationServer.Integration.MQTT.ProprietaryUplinkTopic }}"
 
   # Retained messages configuration.
   #
